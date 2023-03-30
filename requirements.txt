@@ -1,0 +1,5 @@
+aiogram~=2.25.1
+requests~=2.28.2
+uuid~=1.30
+datetime~=5.1
+validators~=0.20.0
