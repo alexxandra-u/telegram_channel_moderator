@@ -4,7 +4,6 @@ import datetime
 import time
 from handlers.database_communicator import DatabaseCommunicator
 from auth_data import VK_PARSING_TOKEN
-
 version = 5.92
 
 class VkParser:

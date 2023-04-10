@@ -1,6 +1,7 @@
 from aiogram import types
 from create_bot import bot, dp
 from parsers.vk_parser import VkParser
+from parsers.youtube_parser import YoutubeParser
 from handlers.database_communicator import DatabaseCommunicator
 from handlers.channel_communicator import ChannelCommunicator
 from utils.keyboards import KeyboardCreator
@@ -67,6 +68,8 @@ class UserCommunicator:
             for source in users_sources:
                 if source[2] == "vk":
                     await VkParser.parse_vk(source, user, parse_time)
+                elif source[2] == "youtube":
+                    await YoutubeParser.parse_youtube(source, user, parse_time)
                 else:
                     print("Я пока не научился парсить источники такого типа")
             data = DatabaseCommunicator.sql_read_content(user)
@@ -95,7 +98,7 @@ class UserCommunicator:
                 elif len(message.text) > 13 and message.text[:13] == 'https://t.me/':
                     await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "tg")
                 else:
-                    await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "site")
+                    await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "youtube")
                 await message.answer(UserMessages.url_success_mes)
             else:
                 await message.answer(UserMessages.url_mistake_mes)
@@ -106,8 +109,8 @@ class UserCommunicator:
             await call.message.answer(UserMessages.add_tg_mes)
         elif call.data == "Сообщество VK":
             await call.message.answer(UserMessages.add_vk_mes)
-        elif call.data == "Сайт":
-            await call.message.answer(UserMessages.add_site_mes)
+        elif call.data == "Youtube канал":
+            await call.message.answer(UserMessages.add_youtube_mes)
         elif call.data == "Установить канал":
             await call.message.answer(UserMessages.set_channel_mes_3)
         elif call.data == "Установить новый канал":

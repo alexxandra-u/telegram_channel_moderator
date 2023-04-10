@@ -4,7 +4,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 class KeyboardCreator():
     def add_source_keyboard():
         inline_keyboard = InlineKeyboardMarkup()
-        buttons_text = ["Телеграм канал/чат", "Сообщество VK", "Сайт"]
+        buttons_text = ["Телеграм канал/чат", "Сообщество VK", "Youtube канал"]
         for i in range(len(buttons_text)):
             btn = InlineKeyboardButton(buttons_text[i], callback_data=buttons_text[i])
             inline_keyboard.add(btn)

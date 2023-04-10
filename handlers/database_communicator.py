@@ -8,7 +8,7 @@ class DatabaseCommunicator:
         cur = base.cursor()
         base.execute("CREATE TABLE IF NOT EXISTS content(content_id INT PRIMARY_KEY, user_id INT, source_type TEXT, "
                      "source_link TEXT, post_link TEXT, text TEXT, datetime DATETIME)")
-        base.execute("CREATE TABLE IF NOT EXISTS channels(user_id INT PRIMARY_KEY, channel_link TEXT, channel_id TEXT)")
+        base.execute("CREATE TABLE IF NOT EXISTS channels(user_id INT PRIMARY_KEY, channel_name TEXT, channel_id TEXT)")
         base.execute("CREATE TABLE IF NOT EXISTS messages(content_id INT PRIMARY_KEY, message_id INT, user_id INT)")
         base.execute("CREATE TABLE IF NOT EXISTS sources(source_id INT PRIMARY_KEY, source_link TEXT, source_type TEXT,"
                      "user_id INT)")

@@ -1,6 +1,7 @@
 from aiogram.utils import executor
-from create_bot import dp
+from create_bot import dp, bot
 from handlers.database_communicator import DatabaseCommunicator
+from handlers.user_communicator import UserCommunicator
 
 
 async def on_startup(_):
