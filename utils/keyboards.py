@@ -33,10 +33,12 @@ class KeyboardCreator():
 
     def channel_keyboard():
         inline_keyboard = InlineKeyboardMarkup()
-        buttons_text = ["Хочу выложить это в канал", "Удалить этот пост"]
+        buttons_text = ["Выложить это в канал сейчас", "Запланировать отправку в канал", "Удалить этот пост"]
         btn1 = InlineKeyboardButton(buttons_text[0], callback_data=buttons_text[0])
-        btn2 = InlineKeyboardButton(buttons_text[1], callback_data='delc' + buttons_text[1])
+        btn2 = InlineKeyboardButton(buttons_text[2], callback_data='delc' + buttons_text[2])
+        btn3 = InlineKeyboardButton(buttons_text[1], callback_data='plan')
         inline_keyboard.add(btn1)
+        inline_keyboard.add(btn3)
         inline_keyboard.add(btn2)
         return inline_keyboard
 

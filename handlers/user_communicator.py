@@ -2,13 +2,14 @@ from aiogram import types
 from create_bot import bot, dp
 from parsers.vk_parser import VkParser
 from parsers.youtube_parser import YoutubeParser
+from parsers.tg_parser import TgParser
 from handlers.database_communicator import DatabaseCommunicator
 from handlers.channel_communicator import ChannelCommunicator
 from utils.keyboards import KeyboardCreator
 from utils.messages import UserMessages
 import time
 import datetime
-import validators
+import re
 
 
 class UserCommunicator:
@@ -70,38 +71,54 @@ class UserCommunicator:
                     await VkParser.parse_vk(source, user, parse_time)
                 elif source[2] == "youtube":
                     await YoutubeParser.parse_youtube(source, user, parse_time)
+                elif source[2] == "tg":
+                    await TgParser.parse_tg(source, user, parse_time)
                 else:
                     print("Я пока не научился парсить источники такого типа")
             data = DatabaseCommunicator.sql_read_content(user)
+            if len(data) == 0:
+                await call.message.answer(UserMessages.no_news_mes)
             for post in data:
                 if time.mktime(datetime.datetime.now().timetuple()) - int(post[6]) < int(parse_time):
                     mes_text = ((post[5] + '\n\n') if post[5] else '') + "Источник: " + post[4]
                     time.sleep(0.3)
-                    mes = await call.message.answer(mes_text, disable_web_page_preview=False,
-                                                    reply_markup=KeyboardCreator.channel_keyboard())
-                    await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
+                    if post[2] == 'tg' and 'реклама' not in mes_text:
+                        mes = await call.message.answer(mes_text, disable_web_page_preview=True,
+                                                        reply_markup=KeyboardCreator.channel_keyboard())
+                        await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
+                    elif 'реклама' not in mes_text:
+                        mes = await call.message.answer(mes_text, disable_web_page_preview=False,
+                                                        reply_markup=KeyboardCreator.channel_keyboard())
+                        await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
+                elif time.mktime(datetime.datetime.now().timetuple()) - int(post[6]) > 604800:
+                    await DatabaseCommunicator.sql_delete_content(post[1], post[0])
 
     @dp.message_handler()
-    async def check_and_add(message: types.Message):
-        has_moderated_channel = len(DatabaseCommunicator.sql_read_channel(message.from_user.id)) > 0
-        if not has_moderated_channel:                            #на вход поступило название тг канала для модерации
-            if message.forward_from_chat:
-                await DatabaseCommunicator.sql_add_channel(message.from_user.id, message.forward_from_chat.title,
-                                                           message.forward_from_chat.id)
-                await message.answer(UserMessages.chan_success_mes)
-            else:
-                await message.answer(UserMessages.chan_mistake_mes)
-        else:                                                       #на вход поступило название источника парсинга
-            if validators.url(message.text):
+    async def process_other_messages(message: types.Message):
+        pattern = r"\d{1,2}:\d{2} \d{1,2}:\d{2}:\d{4}"
+        if re.match(pattern, message.text):                      # пользователь планирует публикацию поста
+            chat_id = DatabaseCommunicator.sql_read_channel(message.from_user.id)
+            mes_text = DatabaseCommunicator.sql_read_content_in_process(message.from_user.id)[0]
+            send_time = message.text
+            await message.answer("Я пока не умею планировать отправку сообщений, но скоро научусь")
+            await ChannelCommunicator.plan_message(chat_id, mes_text, send_time)
+        else:
+            has_moderated_channel = len(DatabaseCommunicator.sql_read_channel(message.from_user.id)) > 0
+            if not has_moderated_channel:                            # на вход поступило название тг канала для модерации
+                if message.forward_from_chat:
+                    await DatabaseCommunicator.sql_add_channel(message.from_user.id, message.forward_from_chat.title,
+                                                               message.forward_from_chat.id)
+                    await message.answer(UserMessages.chan_success_mes)
+                else:
+                    await message.answer(UserMessages.chan_mistake_mes)
+            else:                                                       # на вход поступило название источника парсинга
                 if len(message.text) > 15 and message.text[:15] == 'https://vk.com/':
                     await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "vk")
-                elif len(message.text) > 13 and message.text[:13] == 'https://t.me/':
+                elif message.text[0] == "@" or (len(message.text) > 13 and message.text[:13] == 'https://t.me/'):
                     await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "tg")
                 else:
                     await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "youtube")
                 await message.answer(UserMessages.url_success_mes)
-            else:
-                await message.answer(UserMessages.url_mistake_mes)
 
     @dp.callback_query_handler()
     async def process_answers(call: types.CallbackQuery):
@@ -118,14 +135,17 @@ class UserCommunicator:
             await call.message.answer(UserMessages.set_channel_mes_3)
         elif call.data == "Оставить текущий":
             await call.message.answer("Окей")
-        elif call.data[:4] == "dels":                                                       #delete_source
+        elif call.data[:4] == "dels":                                                       # delete_source
             DatabaseCommunicator.sql_delete_source(call["from"]["id"], call.data[4:])
             await call.message.answer(UserMessages.source_del_suc_mes)
-        elif call.data[:4] == "delc":                                                       #delete content
+        elif call.data[:4] == "delc":                                                       # delete content
             DatabaseCommunicator.sql_delete_message(call["from"]["id"], call.message.message_id)
             await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-        elif call.data == "Хочу выложить это в канал":
+        elif call.data == "Выложить это в канал сейчас":
             chat_id = DatabaseCommunicator.sql_read_channel(call["from"]["id"])
             await ChannelCommunicator.send_message(chat_id[0][2], call.message.text)
+        elif call.data == "plan":
+            await DatabaseCommunicator.sql_change_content_in_process(call["from"]["id"], call.message.text)
+            await call.message.answer(UserMessages.plan_mes)
         elif call.data.isdigit():
             await UserCommunicator.process_parse_command(call, call.data)

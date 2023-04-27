@@ -1,6 +1,7 @@
 import sqlite3 as sq
 import uuid
 
+
 class DatabaseCommunicator:
     def sql_start():
         global base, cur
@@ -12,11 +13,12 @@ class DatabaseCommunicator:
         base.execute("CREATE TABLE IF NOT EXISTS messages(content_id INT PRIMARY_KEY, message_id INT, user_id INT)")
         base.execute("CREATE TABLE IF NOT EXISTS sources(source_id INT PRIMARY_KEY, source_link TEXT, source_type TEXT,"
                      "user_id INT)")
+        base.execute("CREATE TABLE IF NOT EXISTS content_in_process(user_id INT PRIMARY_KEY, message_text TEXT)")
         base.commit()
 
     async def sql_add_content(post_object):
-        already_in_table = cur.execute('SELECT * FROM content WHERE user_id = (?) AND post_link = (?)',
-                                       [post_object[1], post_object[4]]).fetchall()
+        already_in_table = cur.execute('SELECT * FROM content WHERE user_id = (?) AND source_link = (?) AND '
+                                       'datetime = (?)', [post_object[1], post_object[3], post_object[6]]).fetchall()
         if len(already_in_table) == 0:
             cur.execute('INSERT INTO content VALUES (?, ?, ?, ?, ?, ?, ?)', post_object)
             base.commit()
@@ -34,6 +36,15 @@ class DatabaseCommunicator:
         cur.execute('INSERT INTO sources VALUES (?, ?, ?, ?)', [source_id, source_link, source_type, user])
         base.commit()
 
+    async def sql_change_content_in_process(message_text, user_id):
+        already_in_table = cur.execute('SELECT * FROM content_in_process WHERE user_id = (?)', [user_id]).fetchall()
+        if len(already_in_table) == 0:
+            cur.execute('INSERT INTO content_in_process VALUES (?, ?)', [user_id, message_text])
+            base.commit()
+        else:
+            cur.execute('UPDATE content_in_process SET message_text = (?) WHERE user_id = (?)', [message_text, user_id])
+            base.commit()
+
     def sql_read_content(user_id):
         return cur.execute('SELECT * FROM content WHERE user_id = (?)', [user_id]).fetchall()
 
@@ -46,6 +57,9 @@ class DatabaseCommunicator:
     def sql_read_messages(user_id, message_id):
         return cur.execute('SELECT * FROM messages WHERE user_id = (?) AND message_id = (?)',
                            [user_id, message_id]).fetchall()
+
+    def sql_read_content_in_process(user_id):
+        return cur.execute('SELECT * FROM sources WHERE user_id = (?)', [user_id]).fetchone()
 
     def sql_delete_content(user_id, content_id):
         cur.execute(f'DELETE FROM content WHERE user_id = (?) AND content_id = (?)', [user_id, content_id])
