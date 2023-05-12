@@ -1,5 +1,6 @@
 from auth_data import YOUTUBE_PARSING_TOKEN
 from handlers.database_communicator import DatabaseCommunicator
+from utils.language_analyser import Analyser
 import requests
 import re
 import json
@@ -45,7 +46,8 @@ class YoutubeParser:
                 post_link = base_video_url + i['id']['videoId']
                 text = i['snippet']['title']
                 date = post_unixtime
-                post_object = [post_id, user_id, "youtube", source[1], post_link, text, date]
+                tone = Analyser.get_tone(text)
+                post_object = [post_id, user_id, "youtube", source[1], post_link, text, date, tone]
                 await DatabaseCommunicator.sql_add_content(post_object)
             elif not is_new:
                 break

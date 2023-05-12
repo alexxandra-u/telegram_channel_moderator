@@ -1,6 +1,7 @@
 from auth_data import phone, API_ID_TG, API_HASH_TG
 from handlers.database_communicator import DatabaseCommunicator
 from telethon.sync import TelegramClient
+from utils.language_analyser import Analyser
 import datetime
 import time
 import uuid
@@ -21,7 +22,6 @@ class TgParser:
         await client.start()
         channel = await client.get_entity(source[1])
         messages = await client.get_messages(channel, limit=50)
-        # print(1)
         for mes in messages:
             post_time = mes.date
             post_unixtime = int(post_time.timestamp())
@@ -30,7 +30,8 @@ class TgParser:
             if now_unixtime - post_unixtime < int(parse_time):
                 post_id = str(uuid.uuid4()).replace('-', '')
                 text = mes.text
-                post_object = [post_id, user_id, "tg", source[1], source[1], text, post_unixtime]
+                tone = Analyser.get_tone(text)
+                post_object = [post_id, user_id, "tg", source[1], source[1], text, post_unixtime, tone]
                 await DatabaseCommunicator.sql_add_content(post_object)
             else:
                 break

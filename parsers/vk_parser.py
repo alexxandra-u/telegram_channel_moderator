@@ -3,6 +3,7 @@ import uuid
 import datetime
 import time
 from handlers.database_communicator import DatabaseCommunicator
+from utils.language_analyser import Analyser
 from auth_data import VK_PARSING_TOKEN
 version = 5.92
 
@@ -24,6 +25,7 @@ class VkParser:
                 post_link = "https://vk.com/" + domain + "?w=wall" + str(post["from_id"]) + "_" + str(post["id"])
                 text = post["text"]
                 date = post["date"]
-                post_object = [post_id, user_id, "vk", source[1], post_link, text, date]
+                tone = Analyser.get_tone(text)
+                post_object = [post_id, user_id, "vk", source[1], post_link, text, date, tone]
                 await DatabaseCommunicator.sql_add_content(post_object)
 
