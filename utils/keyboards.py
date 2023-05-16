@@ -31,11 +31,11 @@ class KeyboardCreator():
             inline_keyboard.add(btn)
         return inline_keyboard
 
-    def channel_keyboard():
+    def channel_keyboard(content_id):
         inline_keyboard = InlineKeyboardMarkup()
         buttons_text = ["Выложить в канал", "Отредактировать текст", "Удалить"]
         btn1 = InlineKeyboardButton(buttons_text[0], callback_data=buttons_text[0])
-        btn2 = InlineKeyboardButton(buttons_text[1], callback_data='edit')
+        btn2 = InlineKeyboardButton(buttons_text[1], callback_data='edit' + content_id)
         btn3 = InlineKeyboardButton(buttons_text[2], callback_data='delc' + buttons_text[2])
         inline_keyboard.add(btn1)
         inline_keyboard.add(btn2)

@@ -55,7 +55,7 @@ class DatabaseCommunicator:
         return cur.execute('SELECT * FROM content WHERE user_id = (?)', [user_id]).fetchall()
 
     def sql_read_spes_content(user_id, message_text):
-        end_index = message_text.find("Источник: ")
+        end_index = message_text.find("\n\nИсточник: ")
         original_text = message_text[:end_index].rstrip()
         return cur.execute('SELECT * FROM content WHERE user_id = (?) AND text = (?)',
                            [user_id, original_text]).fetchone()

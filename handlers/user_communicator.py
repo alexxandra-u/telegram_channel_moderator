@@ -15,9 +15,13 @@ import difflib
 
 class UserCommunicator:
 
-    @dp.message_handler(commands=['start', 'help'])
+    @dp.message_handler(commands=['start'])
     async def process_start_command(message: types.Message):
         await message.answer(UserMessages.start_mes)
+
+    @dp.message_handler(commands=['help'])
+    async def process_help_command(message: types.Message):
+        await message.answer(UserMessages.help_mes)
 
     @dp.message_handler(commands=['set_channel'])
     async def set_channel(message: types.Message):
@@ -76,38 +80,37 @@ class UserCommunicator:
                     await VkParser.parse_vk(source, user, parse_time)
                 elif source[2] == "youtube":
                     await YoutubeParser.parse_youtube(source, user, parse_time)
-                elif source[2] == "tg":
-                    await TgParser.parse_tg(source, user, parse_time)
                 else:
-                    print("Я пока не научился парсить источники такого типа")
+                    await TgParser.parse_tg(source, user, parse_time)
             data = DatabaseCommunicator.sql_read_content(user)
             toned_data = DatabaseCommunicator.sql_read_tone_content(user, tone)
             if len(data) == 0 or (tone != 'all' and len(toned_data) == 0):
                 await call.message.answer(UserMessages.no_news_mes)
-            for post in data:
-                if time.mktime(datetime.datetime.now().timetuple()) - int(post[6]) < int(parse_time) and (tone == 'all'
-                                                                                                          or tone ==
-                                                                                                          post[7]):
-                    mes_base = (post[5] + '\n\n') if post[5] else ''
-                    time.sleep(0.3)
-                    if post[2] == 'tg' and 'реклама' not in mes_base:
-                        try:
-                            mes_text = mes_base + "Источник: [" + post[4] + '](' + post[4] + ')'
-                            mes = await call.message.answer(mes_text, disable_web_page_preview=True,
-                                                            parse_mode='Markdown',
-                                                            reply_markup=KeyboardCreator.channel_keyboard())
-                        except CantParseEntities:
+            else:
+                for post in data:
+                    if time.mktime(datetime.datetime.now().timetuple()) - int(post[6]) < int(parse_time) and \
+                       (tone == 'all' or tone == post[7]):
+                        mes_base = (post[5] + '\n\n') if post[5] else ''
+                        time.sleep(0.3)
+                        if post[2] == 'tg' and 'реклама' not in mes_base:
+                            try:
+                                mes_text = mes_base + "Источник: [" + post[4] + '](' + post[4] + ')'
+                                mes = await call.message.answer(mes_text, disable_web_page_preview=True,
+                                                                parse_mode='Markdown',
+                                                                reply_markup=KeyboardCreator.channel_keyboard(post[0]))
+                            except CantParseEntities:
+                                mes_text = mes_base + "Источник: " + post[4]
+                                mes = await call.message.answer(mes_text, disable_web_page_preview=True,
+                                                                reply_markup=KeyboardCreator.channel_keyboard(post[0]))
+                            await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
+                        elif 'реклама' not in mes_base:
                             mes_text = mes_base + "Источник: " + post[4]
-                            mes = await call.message.answer(mes_text, disable_web_page_preview=True,
-                                                            reply_markup=KeyboardCreator.channel_keyboard())
-                        await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
-                    elif 'реклама' not in mes_base:
-                        mes_text = mes_base + "Источник: " + post[4]
-                        mes = await call.message.answer(mes_text, disable_web_page_preview=False,
-                                                        reply_markup=KeyboardCreator.channel_keyboard())
-                        await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
-                elif time.mktime(datetime.datetime.now().timetuple()) - int(post[6]) > 604800:
-                    DatabaseCommunicator.sql_delete_content(post[1], post[0])
+                            mes = await call.message.answer(mes_text, disable_web_page_preview=False,
+                                                            reply_markup=KeyboardCreator.channel_keyboard(post[0]))
+                            await DatabaseCommunicator.sql_add_message(post[0], mes["message_id"], user)
+                    elif time.mktime(datetime.datetime.now().timetuple()) - int(post[6]) > 604800:
+                        DatabaseCommunicator.sql_delete_content(post[1], post[0])
+                await call.message.answer(UserMessages.end_parsing_mes)
 
     def compare_texts(old_text, new_text):
         normalized1 = old_text.lower()
@@ -118,14 +121,18 @@ class UserCommunicator:
     @dp.message_handler()
     async def process_other_messages(message: types.Message):
         has_moderated_channel = len(DatabaseCommunicator.sql_read_channel(message.from_user.id)) > 0
-        if not has_moderated_channel:                            # на вход поступило название тг канала для модерации
+
+        # it's tg channel for moderation
+        if not has_moderated_channel:
             if message.forward_from_chat:
                 await DatabaseCommunicator.sql_add_channel(message.from_user.id, message.forward_from_chat.title,
-                                                               message.forward_from_chat.id)
+                                                           message.forward_from_chat.id)
                 await message.answer(UserMessages.chan_success_mes)
             else:
                 await message.answer(UserMessages.chan_mistake_mes)
-        else:                                   # на вход поступило название источника парсинга или новый текст
+
+        # it's parsing source name or edited text
+        else:
             if len(message.text) > 15 and message.text[:15] == 'https://vk.com/':
                 await DatabaseCommunicator.sql_add_source(message.from_user.id, message.text, "vk")
                 await message.answer(UserMessages.url_success_mes)
@@ -145,10 +152,10 @@ class UserCommunicator:
                     await DatabaseCommunicator.sql_edit_content(message.from_user.id, old_text, message.text)
                     try:
                         mes = await message.answer(message.text, disable_web_page_preview=True, parse_mode='Markdown',
-                                                   reply_markup=KeyboardCreator.channel_keyboard())
+                                                   reply_markup=KeyboardCreator.channel_keyboard(content_id))
                     except CantParseEntities:
                         mes = await message.answer(message.text, disable_web_page_preview=True,
-                                                   reply_markup=KeyboardCreator.channel_keyboard())
+                                                   reply_markup=KeyboardCreator.channel_keyboard(content_id))
                     await DatabaseCommunicator.sql_add_message(content_id, mes["message_id"], message.from_user.id)
                 else:
                     await message.answer(UserMessages.no_edit_mes)
@@ -176,14 +183,19 @@ class UserCommunicator:
         elif call.data[:3] in ["all", "pos", "neu", "neg"]:
             await UserCommunicator.process_parse_command(call, call.data[:3], call.data[3:])
 
-        elif call.data[:4] == "dels":                                                       # delete_source
+        # delete_source
+        elif call.data[:4] == "dels":
             DatabaseCommunicator.sql_delete_source(call["from"]["id"], call.data[4:])
             await call.message.answer(UserMessages.source_del_suc_mes)
-        elif call.data[:4] == "delc":                                                       # delete content
+
+        # delete content
+        elif call.data[:4] == "delc":
             DatabaseCommunicator.sql_delete_message(call["from"]["id"], call.message.message_id)
             await bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-        elif call.data == 'edit':
-            content_id = DatabaseCommunicator.sql_read_spes_content(call.from_user.id, call.message.text)[0]
+
+        # edit content
+        elif call.data[:4] == 'edit':
+            content_id = call.data[4:]
             await DatabaseCommunicator.sql_change_content_in_process(call.message.text, call.from_user.id, content_id)
             await call.message.answer(UserMessages.edit_mes)
         elif call.data == "Выложить в канал":

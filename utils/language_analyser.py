@@ -22,7 +22,7 @@ class Analyser:
             return Analyser.sentiment_ru([text])
 
     def sentiment_en(text):
-        blob_object = TextBlob(text, analyzer=NaiveBayesAnalyzer())
+        blob_object = TextBlob(text[0], analyzer=NaiveBayesAnalyzer())
         result = blob_object.sentiment
         if abs(result.p_pos - result.p_neg) < 0.1:
             return "neu"
@@ -31,9 +31,9 @@ class Analyser:
 
     def sentiment_ru(text):
         result = Analyser.model.predict(text, k=2)[0]
-        if "negative" in result and result["negative"] > 0.6:
+        if "negative" in result and result["negative"] > 0.5:
             return "neg"
-        elif "positive" in result and result["positive"] > 0.6:
+        elif "positive" in result and result["positive"] > 0.5:
             return "pos"
         else:
             return "neu"
