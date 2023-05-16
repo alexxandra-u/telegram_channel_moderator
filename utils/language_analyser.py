@@ -2,12 +2,14 @@ from textblob import TextBlob
 from dostoevsky.tokenization import RegexTokenizer
 from dostoevsky.models import FastTextSocialNetworkModel
 from textblob.en.sentiments import NaiveBayesAnalyzer
+import nltk
 
 
 class Analyser:
     tokenizer = RegexTokenizer()
     FastTextSocialNetworkModel.MODEL_PATH = './fasttext-social-network-model.bin'
     model = FastTextSocialNetworkModel(tokenizer=tokenizer)
+
 
     def recognize_language(text):
         if 'а' in text or 'о' in text or 'у' in text or 'и' in text or 'е' in text or 'я' in text:
@@ -16,6 +18,8 @@ class Analyser:
             return "en"
 
     def get_tone(text):
+        nltk.download('movie_reviews')
+        nltk.download("punkt")
         lang = Analyser.recognize_language(text)
         if lang == 'en':
             return Analyser.sentiment_en([text])
