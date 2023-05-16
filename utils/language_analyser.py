@@ -6,6 +6,7 @@ from textblob.en.sentiments import NaiveBayesAnalyzer
 
 class Analyser:
     tokenizer = RegexTokenizer()
+    FastTextSocialNetworkModel.MODEL_PATH = './fasttext-social-network-model.bin'
     model = FastTextSocialNetworkModel(tokenizer=tokenizer)
 
     def recognize_language(text):
