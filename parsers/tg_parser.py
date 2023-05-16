@@ -1,10 +1,11 @@
-from auth_data import phone, API_ID_TG, API_HASH_TG
 from handlers.database_communicator import DatabaseCommunicator
 from telethon.sync import TelegramClient
 from utils.language_analyser import Analyser
 import datetime
 import time
 import uuid
+import os
+
 
 class TgParser:
     def check_time(time_str, parse_time):
@@ -18,7 +19,10 @@ class TgParser:
             return False, post_unixtime
 
     async def parse_tg(source, user_id, parse_time):
-        client = TelegramClient(phone, API_ID_TG, API_HASH_TG)
+        phone = os.getenv('PHONE')
+        api_id_tg = os.getenv('API_ID_TG')
+        api_hash_tg = os.getenv('API_HASH_TG')
+        client = TelegramClient(phone, int(api_id_tg), api_hash_tg)
         await client.start()
         channel = await client.get_entity(source[1])
         messages = await client.get_messages(channel, limit=50)

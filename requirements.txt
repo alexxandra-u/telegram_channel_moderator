@@ -8,3 +8,4 @@ lxml~=4.9.2
 Telethon~=1.28.2
 textblob~=0.17.1
 dostoevsky~=0.6.0
+python-dotenv~=1.0.0

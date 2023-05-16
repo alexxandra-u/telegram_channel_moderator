@@ -4,8 +4,9 @@ import datetime
 import time
 from handlers.database_communicator import DatabaseCommunicator
 from utils.language_analyser import Analyser
-from auth_data import VK_PARSING_TOKEN
+import os
 version = 5.92
+
 
 class VkParser:
     async def parse_vk(source, user_id, parse_time):
@@ -14,7 +15,7 @@ class VkParser:
         now_unixtime = time.mktime(now.timetuple())
         response = requests.get('https://api.vk.com/method/wall.get',
                                 params={
-                                    'access_token': VK_PARSING_TOKEN,
+                                    'access_token': os.getenv('VK_PARSING_TOKEN'),
                                     'v': version,
                                     'domain': domain
                                 })

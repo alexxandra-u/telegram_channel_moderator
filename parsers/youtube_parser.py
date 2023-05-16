@@ -1,4 +1,3 @@
-from auth_data import YOUTUBE_PARSING_TOKEN
 from handlers.database_communicator import DatabaseCommunicator
 from utils.language_analyser import Analyser
 import requests
@@ -7,6 +6,7 @@ import json
 import uuid
 import time
 import urllib
+import os
 from datetime import datetime
 from bs4 import BeautifulSoup
 
@@ -33,7 +33,7 @@ class YoutubeParser:
         base_search_url = 'https://www.googleapis.com/youtube/v3/search?'
 
         first_url = base_search_url + 'key={}&channelId={}&part=snippet,id&order=date&maxResults=25'.format(
-            YOUTUBE_PARSING_TOKEN, channel_id)
+            os.getenv('YOUTUBE_PARSING_TOKEN'), channel_id)
 
         url = first_url
         inp = urllib.request.urlopen(url)
