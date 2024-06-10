@@ -1,7 +1,7 @@
-Telegram-bot that collect content from:
-    1. Other telegram channels
-    2. VK group
-    3. YouTube
+Telegram-bot that collect content from: <br>
+    1. Other telegram channels <br>
+    2. VK group <br>
+    3. YouTube <br>
 and allows to post them to your own telegram channel in a couple of clics.
 
 ![image](https://github.com/alexxandra-u/telegram_channel_moderator/assets/90149266/aba725a6-3c4c-4b20-89cf-d33a40aa6041)
